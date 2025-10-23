@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>스마트 쓰레기통</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; */
+      /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      color: white;
+      font-size: 2.5rem;
+      /* margin-bottom: 1rem; */
+      margin-bottom: 8px;
+      color: #0f172b;
+    }
+
+    .subtitle {
+      color: #45556c;
+      font-size: 1.1rem;
+      margin-bottom: 3rem;
+    }
+
+    .trash-can-container {
+      position: relative;
+      width: 280px;
+      height: 350px;
+      margin: 0 auto 2rem;
+    }
+
+    /* 쓰레기통 본체 */
+    .trash-can {
+      position: absolute;
+      bottom: 24%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 280px;
+      transition: transform 0.3s ease;
+    }
+
+    .trash-can.shake {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(-50%) rotate(0deg); }
+      25% { transform: translateX(-50%) rotate(-3deg); }
+      75% { transform: translateX(-50%) rotate(3deg); }
+    }
+
+    /* 쓰레기통 몸체 */
+    .trash-body {
+      position: relative;
+      width: 100%;
+      height: 256px;
+      background: white;
+      border: 4px solid #1a1a1a;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* 쓰레기 내용물 */
+    .trash-fill {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, #9ca3af 0%, #6b7280 100%);
+      transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 0 0 8px 8px;
+    }
+
+    /* 쓰레기 표면 텍스처 */
+    .trash-surface {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 30px;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 0, 0, 0.1) 10px,
+        rgba(0, 0, 0, 0.1) 20px
+      );
+      border-radius: 50% 50% 0 0;
+    }
+
+    /* 쓰레기통 뚜껑 */
+    .trash-lid {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      height: 50px;
+      background: white;
+      border: 4px solid #1a1a1a;
+      border-radius: 8px 8px 0px 0px;
+      transform-origin: bottom center;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .trash-lid.open {
+      transform: translateX(-50%) rotateX(-45deg) translateY(-10px);
+    }
+
+    /* 뚜껑 손잡이 */
+    .lid-handle {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 20px;
+      background: white;
+      border: 3px solid #1a1a1a;
+      border-radius: 10px;
+    }
+
+    /* 뚜껑 열림 표시 라인 */
+    .lid-shine {
+      position: absolute;
+      top: 5px;
+      left: 20px;
+      right: 20px;
+      display: none;
+    }
+
+    .lid-shine.active {
+      display: block;
+      animation: shine 0.4s ease;
+    }
+
+    @keyframes shine {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
+    /* 냄새 표시 */
+    .odor-lines {
+      position: absolute;
+      top: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .odor-lines.visible {
+      opacity: 1;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-10px); }
+    }
+
+    /* 떨어지는 쓰레기 */
+    .falling-trash {
+      position: absolute;
+      top: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      background: #6b7280;
+      border: 3px solid #1a1a1a;
+      border-radius: 8px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .falling-trash.active {
+      animation: fall 0.8s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+    }
+
+    @keyframes fall {
+      0% {
+        opacity: 1;
+        top: -50px;
+        transform: translateX(-50%) rotate(0deg);
+      }
+      70% {
+        opacity: 1;
+        top: 180px;
+        transform: translateX(-50%) rotate(360deg);
+      }
+      100% {
+        opacity: 0;
+        top: 200px;
+        transform: translateX(-50%) rotate(360deg) scale(0.5);
+      }
+    }
+
+    /* 경고 아이콘 */
+    .warning-icon {
+      position: absolute;
+      bottom: -20px;
+      right: 20px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .warning-icon.visible {
+      opacity: 1;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* 버튼 */
+    .button {
+      border: none;
+      padding: 16px 48px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      margin: 0 8px;
+      border: 2px solid #0f172b;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button:first-child{
+      background: white;
+
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button.secondary {
+      background: white;
+      /* background: rgba(255, 255, 255, 0.2); */
+      color: #3d59a7;
+      backdrop-filter: blur(10px);
+    }
+
+    /* 상태 표시 */
+    .status {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 12px;
+      margin-top: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .status-item:last-child {
+      border-bottom: none;
+    }
+
+    .status-label {
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .status-value {
+      color: #1a1a1a;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      /* background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); */
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 4px;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .trash-can-container {
+        width: 240px;
+        height: 300px;
+      }
+
+      .trash-can {
+        width: 160px;
+        height: 240px;
+      }
+
+      .trash-body {
+        height: 200px;
+      }
+
+      .trash-lid {
+        width: 180px;
+        height: 40px;
+      }
+
+      .button {
+        padding: 12px 32px;
+        font-size: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>쓰레기통 모니터링</h1>
+    <p class="subtitle">버튼을 클릭하여 쓰레기를 버리세요</p>
+
+    <div class="trash-can-container">
+      <!-- 떨어지는 쓰레기 -->
+      <div class="falling-trash" id="fallingTrash"></div>
+
+      <!-- 냄새 표시 -->
+      <svg class="odor-lines" id="odorLines" width="80" height="60" viewBox="0 0 80 60">
+        <path d="M 20 50 Q 20 30, 25 20" stroke="#9ca3af" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 40 50 Q 40 25, 45 10" stroke="#9ca3af" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 60 50 Q 60 30, 55 20" stroke="#9ca3af" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+
+      <!-- 쓰레기통 -->
+      <div class="trash-can" id="trashCan">
+        <!-- 뚜껑 -->
+        <div class="trash-lid" id="trashLid">
+          <div class="lid-handle"></div>
+          <svg class="lid-shine" id="lidShine" width="180" height="10" viewBox="0 0 180 10">
+            <line x1="20" y1="5" x2="50" y2="5" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+            <line x1="130" y1="5" x2="160" y2="5" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+
+        <!-- 몸체 -->
+        <div class="trash-body">
+          <div class="trash-fill" id="trashFill">
+            <div class="trash-surface"></div>
+          </div>
+        </div>
+        
+        
+        <!-- 경고 아이콘 -->
+        <svg class="warning-icon" id="warningIcon" width="50" height="50" viewBox="0 0 50 50">
+          <path d="M 25 5 L 45 40 L 5 40 Z" fill="#fbbf24" stroke="#1a1a1a" stroke-width="3"/>
+          <text x="25" y="35" text-anchor="middle" font-size="24" font-weight="bold" fill="#1a1a1a">!</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="button" id="addTrashBtn" onclick="addTrash()">
+        <svg  width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2 mr-2 h-5 w-5">
+          <path d="M3 6h18"></path>
+          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+          <line x1="10" x2="10" y1="11" y2="17"></line><line x1="14" x2="14" y1="11" y2="17"></line>
+        </svg>
+        쓰레기 넣기
+      </button>
+      <button class="button secondary" id="emptyBtn" onclick="emptyTrash()">
+        쓰레기통 비우기
+      </button>
+    </div>
+
+    <div class="status">
+      <div class="status-item">
+        <span class="status-label">현재 용량</span>
+        <span class="status-value" id="fillLevel">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="status-item">
+        <span class="status-label">상태</span>
+        <span class="status-value" id="statusText">정상</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let fillPercentage = 0;
+    const maxFill = 100;
+    const fillIncrement = 15;
+
+    const trashCan = document.getElementById('trashCan');
+    const trashLid = document.getElementById('trashLid');
+    const trashFill = document.getElementById('trashFill');
+    const fallingTrash = document.getElementById('fallingTrash');
+    const odorLines = document.getElementById('odorLines');
+    const warningIcon = document.getElementById('warningIcon');
+    const lidShine = document.getElementById('lidShine');
+    const addTrashBtn = document.getElementById('addTrashBtn');
+    const fillLevel = document.getElementById('fillLevel');
+    const statusText = document.getElementById('statusText');
+    const progressFill = document.getElementById('progressFill');
+
+    function addTrash() {
+      if (fillPercentage >= maxFill) {
+        alert('쓰레기통이 가득 찼습니다! 비워주세요.');
+        return;
+      }
+
+      // 버튼 비활성화
+      addTrashBtn.disabled = true;
+
+      // 뚜껑 열기
+      trashLid.classList.add('open');
+      lidShine.classList.add('active');
+
+      // 쓰레기 떨어지기
+      setTimeout(() => {
+        fallingTrash.classList.add('active');
+      }, 200);
+
+      // 쓰레기통 흔들림
+      setTimeout(() => {
+        trashCan.classList.add('shake');
+        fallingTrash.classList.remove('active');
+      }, 800);
+
+      // 채우기
+      setTimeout(() => {
+        fillPercentage = Math.min(fillPercentage + fillIncrement, maxFill);
+        updateTrashCan();
+        trashCan.classList.remove('shake');
+      }, 1300);
+
+      // 뚜껑 닫기
+      setTimeout(() => {
+        trashLid.classList.remove('open');
+        lidShine.classList.remove('active');
+        addTrashBtn.disabled = false;
+      }, 1600);
+    }
+
+    function emptyTrash() {
+      fillPercentage = 0;
+      updateTrashCan();
+    }
+
+    function updateTrashCan() {
+      // 높이 업데이트
+      const fillHeight = (fillPercentage / maxFill) * 200; // 200px = trash-body height
+      trashFill.style.height = fillHeight + 'px';
+
+      // 퍼센트 표시
+      fillLevel.textContent = fillPercentage + '%';
+      progressFill.style.width = fillPercentage + '%';
+
+      // 냄새 표시 (60% 이상)
+      if (fillPercentage >= 60) {
+        odorLines.classList.add('visible');
+      } else {
+        odorLines.classList.remove('visible');
+      }
+
+      // 경고 표시 (80% 이상)
+      if (fillPercentage >= 80) {
+        warningIcon.classList.add('visible');
+        statusText.textContent = '⚠️ 거의 가득참';
+        statusText.style.color = '#f59e0b';
+      } else if (fillPercentage >= 60) {
+        warningIcon.classList.remove('visible');
+        statusText.textContent = '주의 필요';
+        statusText.style.color = '#f59e0b';
+      } else {
+        warningIcon.classList.remove('visible');
+        statusText.textContent = '정상';
+        statusText.style.color = '#10b981';
+      }
+
+      // 가득 참
+      if (fillPercentage >= maxFill) {
+        statusText.textContent = '🚨 가득참';
+        statusText.style.color = '#ef4444';
+      }
+    }
+
+    // 초기화
+    updateTrashCan();
+  </script>
+</body>
+</html>
